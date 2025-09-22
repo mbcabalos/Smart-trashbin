@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Register - Smart Bottle Vending Machine{% endblock title %}
+
+{% block content %}
+<div class="registration-container">
+    <div class="registration-card">
+        <h2 class="registration-title">SIGN UP</h2>
+        
+        {% if form.errors %}
+        <div class="form-errors">
+            Please correct the errors below.
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <form method="post" class="registration-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="Choose a username">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" required placeholder="Enter your email">
+            </div>
+            
+            <div class="form-group">
+                <label for="password1">Password</label>
+                <input type="password" id="password1" name="password1" required placeholder="Create a password">
+            </div>
+            
+            <div class="form-group">
+                <label for="password2">Confirm Password</label>
+                <input type="password" id="password2" name="password2" required placeholder="Confirm your password">
+            </div>
+            
+            <button type="submit" class="btn-primary">CREATE ACCOUNT</button>
+        </form>
+        
+        <div class="auth-switch">
+            Already have an account? <a href="{% url 'login' %}">Login here</a>
+        </div>
+    </div>
+</div>
+{% endblock content %}

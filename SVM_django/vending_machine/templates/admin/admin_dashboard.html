@@ -1,0 +1,70 @@
+{% extends "admin/admin_base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Smart Bottle Vending Machine{% endblock title %}
+
+{% block content %}
+<div class="admin-header">
+    <h1>Dashboard</h1>
+</div>
+
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <h3>Total Users</h3>
+        <p class="stat-number">{{ total_users }}</p>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">🥤</div>
+        <h3>Total Bottles</h3>
+        <p class="stat-number">{{ total_bottles }}</p>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">🎫</div>
+        <h3>Total Vouchers</h3>
+        <p class="stat-number">{{ total_vouchers }}</p>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <h3>Redeemed Vouchers</h3>
+        <p class="stat-number">{{ redeemed_vouchers }}</p>
+    </div>
+</div>
+
+<div class="users-table">
+    <div class="table-header">
+        <h2>Recent Vouchers</h2>
+    </div>
+    <div class="table-content">
+        {% if vouchers %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Created At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for voucher in vouchers %}
+                <tr>
+                    <td>{{ voucher.code }}</td>
+                    <td>{{ voucher.duration_minutes }} minutes</td>
+                    <td>{% if voucher.is_redeemed %}Redeemed{% else %}Available{% endif %}</td>
+                    <td>{{ voucher.created_at|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding: 20px; text-align: center; color: #7f8c8d;">
+            No vouchers created yet.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}

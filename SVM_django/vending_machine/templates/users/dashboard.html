@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h2>Welcome, {{ user.username }}!</h2>
+  <p><strong>Email:</strong> {{ user.email }}</p>
+  <p><strong>Vouchers:</strong> {{ profile.vouchers }}</p>
+  <p><strong>Transaction History:</strong> {{ profile.transaction_history|default:"No transactions yet." }}</p>
+</div>
+{% endblock %}
