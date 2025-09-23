@@ -46,11 +46,14 @@
               >🎫 Vouchers</a
             >
           </li>
-          <li><form action="{% url 'logout' %}" method="post" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" class="logout-btn">🚪 Logout</button>
+          <li>
+            <form action="{% url 'logout' %}" method="post" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="admin-sidebar-link">
+                🚪 Logout
+              </button>
             </form>
-        </li>
+          </li>
         </ul>
       </div>
 

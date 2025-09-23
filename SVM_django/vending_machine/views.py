@@ -23,13 +23,29 @@ def register(request):
 
 @login_required
 def dashboard(request):
-    # if the logged-in user is an admin, send them to custom admin dashboard
-    if request.user.is_superuser or request.user.is_staff:
-        return redirect("admin_dashboard") 
-
+    # if the logged-in user is an admin, send them to admin dashboard
+    if request.user.is_staff or request.user.is_superuser:
+        return redirect('admin_dashboard')
+    
     # otherwise, normal users get their user dashboard
     profile, created = UserProfile.objects.get_or_create(user=request.user)
-    return render(request, "users/dashboard.html", {"profile": profile})
+    
+    vouchers = Voucher.objects.filter(redeemed_by=request.user).order_by('-created_at')
+    transactions = []  # Replace with actual transaction query
+    
+    # Calculate stats
+    redeemed_vouchers = vouchers.filter(is_redeemed=True).count()
+    total_transactions = len(transactions)  # Replace with actual count
+    
+    context = {
+        'profile': profile,
+        'vouchers': vouchers,
+        'transactions': transactions,
+        'redeemed_vouchers': redeemed_vouchers,
+        'total_transactions': total_transactions,
+    }
+    
+    return render(request, "users/dashboard.html", context)
 
 # User views
 def user_home(request):

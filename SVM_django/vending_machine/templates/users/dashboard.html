@@ -1,9 +1,224 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}User Dashboard - Smart Bottle Vending Machine{% endblock %}
+
 {% block content %}
-<div class="container">
-  <h2>Welcome, {{ user.username }}!</h2>
-  <p><strong>Email:</strong> {{ user.email }}</p>
-  <p><strong>Vouchers:</strong> {{ profile.vouchers }}</p>
-  <p><strong>Transaction History:</strong> {{ profile.transaction_history|default:"No transactions yet." }}</p>
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Welcome Section -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 text-primary">Welcome, {{ user.username }}!</h1>
+            <p class="lead">Manage your vouchers and view your history</p>
+        </div>
+
+        <!-- Voucher Summary Cards -->
+        <div class="row mb-5">
+            <div class="col-md-4 mb-4">
+                <div class="card border-primary shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-ticket-alt fa-3x text-primary"></i>
+                        </div>
+                        <h3 class="card-title">{{ profile.vouchers }}</h3>
+                        <p class="card-text">Available Vouchers</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card border-success shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-wifi fa-3x text-success"></i>
+                        </div>
+                        <h3 class="card-title">{{ redeemed_vouchers }}</h3>
+                        <p class="card-text">Redeemed Vouchers</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card border-info shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-history fa-3x text-info"></i>
+                        </div>
+                        <h3 class="card-title">{{ total_transactions }}</h3>
+                        <p class="card-text">Total Bottles</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vouchers Section -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-ticket-alt me-2"></i>
+                    My Vouchers
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if vouchers %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Voucher Code</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Redeemed Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for voucher in vouchers %}
+                            <tr>
+                                <td>
+                                    <strong class="text-primary">{{ voucher.code }}</strong>
+                                </td>
+                                <td>{{ voucher.duration_minutes }} minutes</td>
+                                <td>
+                                    {% if voucher.is_redeemed %}
+                                    <span class="badge bg-success">Redeemed</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">Available</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if voucher.redeemed_at %}
+                                    {{ voucher.redeemed_at|date:"M d, Y H:i" }}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if not voucher.is_redeemed %}
+                                    <button class="btn btn-sm btn-success" onclick="redeemVoucher('{{ voucher.code }}')">
+                                        Redeem
+                                    </button>
+                                    {% else %}
+                                    <span class="text-muted">Used</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-ticket-alt fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No vouchers available</h5>
+                    <p class="text-muted">Insert bottles to get WiFi vouchers!</p>
+                    <a href="" class="btn btn-primary">Browse Vouchers</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Bottle History Section -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Purchase History
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Bottle</th>
+                                <th>Price</th>
+                                <th>Voucher Earned</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.timestamp|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    <strong>{{ transaction.bottle.name }}</strong>
+                                    {% if transaction.bottle.image_url %}
+                                    <img src="{{ transaction.bottle.image_url }}" alt="{{ transaction.bottle.name }}" 
+                                         class="ms-2" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;">
+                                    {% endif %}
+                                </td>
+                                <td>${{ transaction.amount }}</td>
+                                <td>
+                                    {% if transaction.voucher_generated %}
+                                    <span class="badge bg-success">Yes</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">Completed</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No History</h5>
+                    <p class="text-muted">Start inserting bottles to see your history here!</p>
+                    <a href="" class="btn btn-primary">View History</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- JavaScript for Voucher Actions -->
+<script>
+function redeemVoucher(voucherCode) {
+    if (confirm('Are you sure you want to redeem voucher ' + voucherCode + '?')) {
+        // Here you would typically make an AJAX call to redeem the voucher
+        alert('Voucher ' + voucherCode + ' redeemed successfully! WiFi access granted.');
+        // Reload the page to update the status
+        location.reload();
+    }
+}
+</script>
+
+<!-- Font Awesome for Icons -->
+<script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+<style>
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+    border: none;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.8em;
+}
+
+.btn {
+    border-radius: 8px;
+}
+
+.display-4 {
+    font-weight: 300;
+}
+</style>
 {% endblock %}
