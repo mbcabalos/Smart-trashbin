@@ -1,15 +1,28 @@
-document.getElementById("redeemForm").addEventListener("submit", async (e) => {
+const form = document.getElementById("redeemForm");
+const input = document.getElementById("voucherInput");
+const button = form.querySelector("button");
+const spinner = document.getElementById("spinner");
+const result = document.getElementById("result");
+
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const code = document.getElementById("voucherInput").value.trim();
+  const code = input.value.trim();
 
   if (!code) {
-    document.getElementById("result").textContent =
-      "Please enter a voucher code.";
+    result.textContent = "Please enter a voucher code.";
     return;
   }
 
+  // --- Show spinner and disable controls ---
+  input.disabled = true;
+  button.disabled = true;
+  button.hidden = true;
+  input.hidden = true;
+  spinner.hidden = false;
+  result.textContent = "";
+
   try {
-    const response = await fetch("/api/redeem", {
+    const response = await fetch("http://127.0.0.1:5000/api/redeem", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ voucher: code }),
@@ -22,7 +35,12 @@ document.getElementById("redeemForm").addEventListener("submit", async (e) => {
 
     window.location.href = "success.html";
   } catch (error) {
-    document.getElementById("result").textContent =
-      error.message || "An error occurred.";
+    // --- Restore form on error ---
+    spinner.hidden = true;
+    input.hidden = false;
+    button.hidden = false;
+    input.disabled = false;
+    button.disabled = false;
+    result.textContent = error.message || "An error occurred.";
   }
 });

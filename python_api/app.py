@@ -13,6 +13,9 @@ init_db()
 # DATABASE = "/home/sbvm/python_api/sbvm_wifi.db"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE = os.path.join(BASE_DIR, "sbvm_wifi.db")
+REMOVE_SCRIPT = os.path.join(BASE_DIR, "actions", "remove_mac.sh")
+ALLOW_SCRIPT = os.path.join(BASE_DIR, "actions", "allow_mac.sh")
+
 ACCESS_DURATION_MINUTES = 5
 API_KEY = "DJMSBVMPROJ2025"
 
@@ -103,7 +106,7 @@ def redeem():
         current_ip = client_ip  
 
     try:
-        subprocess.run(['sudo', '/home/sbvm/captive_portal/python_api/actions/allow_mac.sh', mac], check=True)
+        subprocess.run(    ["sudo", ALLOW_SCRIPT, mac], check=True)
     except subprocess.CalledProcessError as e:
         conn.close()
         return jsonify({'error': 'Failed to whitelist MAC address'}), 500
@@ -143,9 +146,10 @@ def expiry_watcher():
         rows = cur.fetchall()
         for mac, exp_str in rows:
             expiry = datetime.fromisoformat(exp_str)
+
             if expiry <= now:
                 subprocess.run(
-                    ['sudo', '/home/sbvm/captive_portal/python_api/actions/remove_mac.sh', mac],
+                    ["sudo", REMOVE_SCRIPT, mac],
                     check=True
                 )
                 cur.execute("DELETE FROM access_time WHERE mac_address=?", (mac,))
