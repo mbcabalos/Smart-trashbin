@@ -1,63 +1,106 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Smart Bottle Vending Machine</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/registration.css' %}">
-  </head>
-  <body>
-    <nav class="navbar navbar-dark bg-primary mb-4">
-      <div class="container-fluid position-relative">
-        <!-- Centered Title -->
-        <div class="w-100 text-center">
-          <span class="navbar-brand mb-0 h1">Smart Bottle Vending Machine</span>
-        </div>
+<head>
+  <meta charset="utf-8" />
+  <title>{% block title %}Smart Bottle Vending Machine{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/registration.css' %}">
+  <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+  <style>
+    /* Top-right floating alerts */
+    .floating-alert {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1050; /* above other content */
+      min-width: 200px;
+      max-width: 300px;
+      font-size: 0.875rem; /* smaller text */
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      background: #3ac44c;
+      color: white;
+      border-color: #096e16;
+    }
 
-        <!-- Logout Button (top-right only if logged in) -->
-        {% if request.user.is_authenticated %}
-        <form action="{% url 'logout' %}" method="post" 
-              class="position-absolute end-0 top-50 translate-middle-y me-3">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-outline-light btn-sm">
-            🚪 Logout
-          </button>
-        </form>
-        {% endif %}
+    .floating-alert.alert-danger {
+      background: #e74c3c;
+      border-color: #c0392b;
+    }
+
+    .floating-alert.hide {
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+
+    /* Navbar green theme */
+    .navbar.bg-primary {
+      background: linear-gradient(90deg, #3ac44c, #096e16) !important;
+    }
+
+    .btn-outline-light {
+      color: white;
+      border-color: white;
+    }
+
+    .btn-outline-light:hover {
+      background: white;
+      color: #096e16;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-dark bg-primary mb-4">
+  <div class="container-fluid position-relative">
+    <div class="w-100 text-center">
+      <span class="navbar-brand mb-0 h1">Smart Bottle Vending Machine</span>
+    </div>
+
+    {% if request.session.user_id %}
+    <form action="{% url 'logout' %}" method="post" class="position-absolute end-0 top-50 translate-middle-y me-3">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-light btn-sm">🚪 Logout</button>
+    </form>
+    {% endif %}
+  </div>
+</nav>
+
+<main class="container">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="text-center mt-5 mb-5">
+  <small>© Smart Bottle Vending Machine</small>
+</footer>
+
+{% if messages %}
+  <div id="floating-alert-container">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show floating-alert" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
-    </nav>
+    {% endfor %}
+  </div>
+{% endif %}
 
-    <main class="container">
-      {% if messages %} 
-        {% for message in messages %}
-        <div
-          class="alert alert-{{ message.tags }} alert-dismissible fade show"
-          role="alert"
-        >
-          {{ message }}
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="alert"
-            aria-label="Close"
-          ></button>
-        </div>
-        {% endfor %} 
-      {% endif %} 
-      
-      {% block content %}{% endblock %}
-    </main>
-
-    <footer class="text-center mt-5 mb-5">
-      <small>© Smart Bottle Vending Machine</small>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  </body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const alertList = document.querySelectorAll('.floating-alert');
+    alertList.forEach((alert) => {
+      setTimeout(() => {
+        alert.classList.add('hide');
+        setTimeout(() => {
+          const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+          bsAlert.close();
+        }, 500); 
+      }, 2000); // close after 2 seconds
+    });
+  });
+</script>
+</body>
 </html>

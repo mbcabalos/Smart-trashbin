@@ -53,8 +53,16 @@ WSGI_APPLICATION = 'smart_vending_machine.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'djongo',
+        'NAME': 'smart_vending',   # your MongoDB database name
+        'ENFORCE_SCHEMA': False,
+        'CLIENT': {
+            'host': 'mongodb+srv://smart_bin_wifi:smart_bin_wifi@cluster0.9fjmqox.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+            'port': 27017,
+            # If you use authentication:
+            # 'username': 'yourUser',
+            # 'password': 'yourPass',
+        }
     }
 }
 

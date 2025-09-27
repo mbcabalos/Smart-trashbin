@@ -5,12 +5,17 @@ import sqlite3
 from datetime import datetime, timedelta
 from gen_voucher import generate_and_store_voucher
 from init_db import init_db
+from pymongo import MongoClient
+from werkzeug.security import generate_password_hash
+from flask_cors import CORS
 
 
+
+
+# ----------------------------
+# Init SQLite
+# ----------------------------
 init_db()
-
-
-# DATABASE = "/home/sbvm/python_api/sbvm_wifi.db"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE = os.path.join(BASE_DIR, "sbvm_wifi.db")
 REMOVE_SCRIPT = os.path.join(BASE_DIR, "actions", "remove_mac.sh")
@@ -20,12 +25,63 @@ ACCESS_DURATION_MINUTES = 5
 API_KEY = "DJMSBVMPROJ2025"
 
 
+# ----------------------------
+# Init MongoDB
+# ----------------------------
+client = MongoClient("mongodb+srv://smart_bin_wifi:smart_bin_wifi@cluster0.9fjmqox.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")   # change if using Atlas
+mdb = client["smart_vending"]
+
+users_col = mdb["users"]
+vouchers_col = mdb["vouchers"]
+logs_col = mdb["activity_logs"]
+
+
 app = Flask(__name__)
+CORS(app)
 
 
+# ----------------------------
+# API: Register User (MongoDB)
+# ----------------------------
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get("username")
+    email = data.get("email")
+    password = data.get("password")
+    confirm_password = data.get("confirmPassword")
+
+    # Basic validations
+    if not username or not email or not password or not confirm_password:
+        return jsonify({"error": "All fields are required"}), 400
+
+    if password != confirm_password:
+        return jsonify({"error": "Passwords do not match"}), 400
+
+    # Check if email already exists
+    existing_user = users_col.find_one({"email": email})
+    if existing_user:
+        return jsonify({"error": "Email already registered"}), 400
+
+    # Save user (hash password for security)
+    hashed_pw = generate_password_hash(password)
+    user_doc = {
+        "username": username,
+        "email": email,
+        "password": hashed_pw,
+        "role": "user",
+        "created_at": datetime.now()
+    }
+    users_col.insert_one(user_doc)
+
+    return jsonify({"message": "Account successfully created"}), 201
+
+
+# ----------------------------
+# Helper functions
+# ----------------------------
 def get_mac_from_ip(ip):
     try:
-        # Ping once to refresh ARP cache (optional)
         subprocess.run(['ping', '-c', '1', '-W', '1', ip],
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -39,17 +95,10 @@ def get_mac_from_ip(ip):
         print(f"Error retrieving MAC for IP {ip}: {e}")
     return None
 
-def get_ip_from_mac(mac):
-    try:
-        with open("/var/lib/misc/dnsmasq.leases") as f:
-            for line in f:
-                parts = line.split()
-                if len(parts) >= 3 and parts[1].lower() == mac.lower():
-                    return parts[2]
-    except Exception as e:
-        print(f"Error reading dnsmasq leases: {e}")
-    return None
 
+# ----------------------------
+# API: Generate Voucher
+# ----------------------------
 @app.route('/api/generate_voucher', methods=['POST'])
 def generate_voucher_endpoint():
     key = request.headers.get("X-API-KEY")
@@ -62,15 +111,24 @@ def generate_voucher_endpoint():
     else:
         return jsonify({"error": "Failed to generate a unique voucher"}), 500
 
+
+# ----------------------------
+# API: Redeem Voucher
+# ----------------------------
 @app.route('/api/redeem', methods=['POST'])
 def redeem():
     data = request.get_json()
     voucher = data.get('voucher')
+    email = data.get('email') 
 
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
-    # Check voucher validity
+    user = users_col.find_one({"email": email})  # assuming users_col is your MongoDB users collection
+    if not user:
+        return jsonify({'error': 'Account not found. Please create an account.'}), 400
+
+    # Check voucher validity in SQLite
     cursor.execute("SELECT redeemed FROM vouchers WHERE voucher_code = ?", (voucher,))
     row = cursor.fetchone()
     if not row:
@@ -81,30 +139,30 @@ def redeem():
         return jsonify({'error': 'Voucher already redeemed'}), 400
 
     client_ip = request.headers.get('X-Real-IP', request.remote_addr)
-    mac = get_mac_from_ip(client_ip)
+    if client_ip == "127.0.0.1":
+        mac = "00:11:22:33:44:55"
+    else:
+        mac = get_mac_from_ip(client_ip)
     if not mac:
         conn.close()
         return jsonify({'error': 'Could not determine MAC address'}), 400
 
     now = datetime.now()
 
-    # Check if MAC already exists in SQLite
+    # --- SQLite: Handle Access Control ---
     cursor.execute("SELECT expires FROM access_time WHERE mac_address = ?", (mac,))
     row = cursor.fetchone()
     if row:
-        # MAC exists, just extend expiry
         current_expiry = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
         new_expiry = max(now, current_expiry) + timedelta(minutes=ACCESS_DURATION_MINUTES)
         cursor.execute("UPDATE access_time SET expires=? WHERE mac_address=?", (new_expiry, mac))
         message = "Enjoy your extra 5 minutes of internet service."
-        print(f"Extended expiry for MAC {mac} until {new_expiry}")
     else:
-        # First-time redemption: whitelist MAC
-        try:
-            subprocess.run(["sudo", ALLOW_SCRIPT, mac], check=True)
-        except subprocess.CalledProcessError as e:
-            conn.close()
-            return jsonify({'error': 'Failed to whitelist MAC address'}), 500
+        # try:
+        #     subprocess.run(["sudo", ALLOW_SCRIPT, mac], check=True)
+        # except subprocess.CalledProcessError as e:
+        #     conn.close()
+        #     return jsonify({'error': 'Failed to whitelist MAC address'}), 500
 
         new_expiry = now + timedelta(minutes=ACCESS_DURATION_MINUTES)
         cursor.execute(
@@ -112,18 +170,33 @@ def redeem():
             (mac, client_ip, new_expiry)
         )
         message = f"Voucher redeemed. MAC {mac} whitelisted until {new_expiry.strftime('%H:%M:%S')}"
-        print(f"Whitelisted MAC {mac} until {new_expiry}")
 
-    # Mark voucher as redeemed
+    # Mark voucher as redeemed in SQLite
     cursor.execute(
         "UPDATE vouchers SET redeemed = 1, redeemed_by = ?, redeemed_at = ? WHERE voucher_code = ?",
         (mac, now, voucher)
     )
-
     conn.commit()
     conn.close()
 
-    # Nudge client
+    # --- MongoDB: Log voucher redemption ---
+    vouchers_col.update_one(
+        {"voucher_code": voucher},
+        {"$set": {
+            "redeemed": True,
+            "redeemed_by_email": email,   
+            "redeemed_at": now
+        }}
+    )
+
+    logs_col.insert_one({
+        "action": "redeem",
+        "voucher_code": voucher,
+        "email": email,
+        "timestamp": now
+    })
+
+    # Try to nudge client
     try:
         subprocess.run(["curl", "-s", f"http://{client_ip}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception as e:
@@ -132,7 +205,9 @@ def redeem():
     return jsonify({'message': message})
 
 
-
+# ----------------------------
+# Expiry Watcher (SQLite only)
+# ----------------------------
 def expiry_watcher():
     while True:
         time.sleep(60)
@@ -141,20 +216,14 @@ def expiry_watcher():
         cur = conn.cursor()
         cur.execute("SELECT mac_address, ip_address, expires FROM access_time")
         rows = cur.fetchall()
-        print("Starting nudge")
-
+        print(f"Checking {len(rows)} entries for expiry at {now}")
         for mac, ip, exp_str in rows:
             expiry = datetime.fromisoformat(exp_str)
-
             if expiry <= now:
-                subprocess.run(
-                    ["sudo", REMOVE_SCRIPT, mac],
-                    check=True
-                )
-                cur.execute("DELETE FROM access_time WHERE mac_address=?", (mac,))  
+                subprocess.run(["sudo", REMOVE_SCRIPT, mac], check=True)
+                cur.execute("DELETE FROM access_time WHERE mac_address=?", (mac,))
         conn.commit()
         conn.close()
-
 
 
 if __name__ == '__main__':

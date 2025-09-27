@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <main class="card">
+      <header>
+        <h1>Create Account</h1>
+        <p class="tagline">Register below to start using Smart Wi-Fi Bin.</p>
+      </header>
+
+      <section class="content">
+        <form id="registerForm" class="redeem-form">
+          <input type="text" id="username" placeholder="Enter username" required />
+          <input type="email" id="email" placeholder="Enter email" required />
+          <input type="password" id="password" placeholder="Enter password" required />
+          <input type="password" id="confirmPassword" placeholder="Confirm password" required />
+          <button type="submit" class="primary-btn">Register</button>
+          <p class="link-text">
+            Already have an account?
+            <a href="index.html" class="link-btn">Go back</a>
+          </p>
+        </form>
+      </section>
+    </main>
+    <!-- load JS at the very bottom -->
+    <script src="js/register.js"></script>
+  </body>
+</html>

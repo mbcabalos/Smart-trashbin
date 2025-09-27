@@ -7,7 +7,7 @@
 
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  background: linear-gradient(135deg, #3ac44c, #096e16);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -19,11 +19,27 @@ body {
   width: 32px;
   height: 32px;
   border: 4px solid #ccc;
-  border-top-color: #3498db;
+  border-top-color: #3ac44c;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 1rem auto;
 }
+
+/* Spinner overlay covers entire card content */
+.spinner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 1.5rem; /* match card border-radius */
+  z-index: 10;
+}
+
 
 @keyframes spin {
   to {
@@ -61,8 +77,8 @@ header h1 {
 
 .primary-btn {
   display: inline-block;
-  background: #4facfe;
-  background: linear-gradient(90deg, #4facfe, #00f2fe);
+  background: #3ac44c;
+  background: linear-gradient(90deg, #3ac44c, #096e16);
   color: #fff;
   border: none;
   border-radius: 50px;
@@ -83,10 +99,16 @@ header h1 {
   color: #2c7a7b;
 }
 
+/* Text below button */
+.link-text {
+  margin-top: 1.2rem;
+  color: #000;
+  font-size: 0.95rem;
+}
+
+/* Green clickable link */
 .link-btn {
-  display: inline-block;
-  margin-top: 1.5rem;
-  color: #4facfe;
+  color: #3ac44c;
   text-decoration: none;
   font-weight: 600;
 }
@@ -107,7 +129,7 @@ header h1 {
 .redeem-form input {
   width: 80%;
   padding: 0.7rem 1rem;
-  border: 2px solid #4facfe;
+  border: 2px solid #3ac44c;
   border-radius: 8px;
   font-size: 1rem;
   outline: none;
@@ -115,7 +137,7 @@ header h1 {
 }
 
 .redeem-form input:focus {
-  border-color: #00f2fe;
+  border-color: #096e16;
 }
 
 .result {
