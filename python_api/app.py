@@ -70,6 +70,7 @@ def redeem():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
+    # Check voucher validity
     cursor.execute("SELECT redeemed FROM vouchers WHERE voucher_code = ?", (voucher,))
     row = cursor.fetchone()
     if not row:
@@ -80,71 +81,69 @@ def redeem():
         return jsonify({'error': 'Voucher already redeemed'}), 400
 
     client_ip = request.headers.get('X-Real-IP', request.remote_addr)
-
-    if client_ip == "127.0.0.1":
-        mac = "test-mac-01"
-    else:
-        mac = get_mac_from_ip(client_ip)
-
+    mac = get_mac_from_ip(client_ip)
     if not mac:
         conn.close()
         return jsonify({'error': 'Could not determine MAC address'}), 400
 
-    def get_ip_from_mac(mac):
-        try:
-            with open("/var/lib/misc/dnsmasq.leases") as f:
-                for line in f:
-                    parts = line.split()
-                    if len(parts) >= 3 and parts[1].lower() == mac.lower():
-                        return parts[2] 
-        except Exception as e:
-            print(f"Error reading dnsmasq leases: {e}")
-        return None
-
-    current_ip = get_ip_from_mac(mac)
-    if not current_ip:
-        current_ip = client_ip  
-
-    try:
-        subprocess.run(    ["sudo", ALLOW_SCRIPT, mac], check=True)
-    except subprocess.CalledProcessError as e:
-        conn.close()
-        return jsonify({'error': 'Failed to whitelist MAC address'}), 500
-
-    cursor.execute("SELECT expires FROM access_time WHERE mac_address = ?", (mac,))
-    row = cursor.fetchone()
     now = datetime.now()
 
+    # Check if MAC already exists in SQLite
+    cursor.execute("SELECT expires FROM access_time WHERE mac_address = ?", (mac,))
+    row = cursor.fetchone()
     if row:
+        # MAC exists, just extend expiry
         current_expiry = datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
-        new_expiry = max(now, current_expiry) + timedelta(minutes=5)  
+        new_expiry = max(now, current_expiry) + timedelta(minutes=ACCESS_DURATION_MINUTES)
+        cursor.execute("UPDATE access_time SET expires=? WHERE mac_address=?", (new_expiry, mac))
+        message = "Enjoy your extra 5 minutes of internet service."
+        print(f"Extended expiry for MAC {mac} until {new_expiry}")
     else:
-        new_expiry = now + timedelta(minutes=5)
+        # First-time redemption: whitelist MAC
+        try:
+            subprocess.run(["sudo", ALLOW_SCRIPT, mac], check=True)
+        except subprocess.CalledProcessError as e:
+            conn.close()
+            return jsonify({'error': 'Failed to whitelist MAC address'}), 500
 
-    cursor.execute("REPLACE INTO access_time (mac_address, expires) VALUES (?, ?)",
-                   (mac, new_expiry))
+        new_expiry = now + timedelta(minutes=ACCESS_DURATION_MINUTES)
+        cursor.execute(
+            "INSERT INTO access_time (mac_address, ip_address, expires) VALUES (?, ?, ?)",
+            (mac, client_ip, new_expiry)
+        )
+        message = f"Voucher redeemed. MAC {mac} whitelisted until {new_expiry.strftime('%H:%M:%S')}"
+        print(f"Whitelisted MAC {mac} until {new_expiry}")
 
-    cursor.execute("UPDATE vouchers SET redeemed = 1, redeemed_by = ?, redeemed_at = ? WHERE voucher_code = ?",
-                   (mac, now, voucher))
+    # Mark voucher as redeemed
+    cursor.execute(
+        "UPDATE vouchers SET redeemed = 1, redeemed_by = ?, redeemed_at = ? WHERE voucher_code = ?",
+        (mac, now, voucher)
+    )
+
     conn.commit()
     conn.close()
 
+    # Nudge client
     try:
-        subprocess.run(["curl", "-s", f"http://{current_ip}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["curl", "-s", f"http://{client_ip}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception as e:
         print(f"Could not nudge client: {e}")
 
-    return jsonify({'message': f'Voucher redeemed. MAC {mac} whitelisted until {new_expiry.strftime("%H:%M:%S")}'})
+    return jsonify({'message': message})
+
+
 
 def expiry_watcher():
     while True:
-        time.sleep(5)
+        time.sleep(60)
         now = datetime.now()
         conn = sqlite3.connect('sbvm_wifi.db')
         cur = conn.cursor()
-        cur.execute("SELECT mac_address, expires FROM access_time")
+        cur.execute("SELECT mac_address, ip_address, expires FROM access_time")
         rows = cur.fetchall()
-        for mac, exp_str in rows:
+        print("Starting nudge")
+
+        for mac, ip, exp_str in rows:
             expiry = datetime.fromisoformat(exp_str)
 
             if expiry <= now:
@@ -152,11 +151,12 @@ def expiry_watcher():
                     ["sudo", REMOVE_SCRIPT, mac],
                     check=True
                 )
-                cur.execute("DELETE FROM access_time WHERE mac_address=?", (mac,))
+                cur.execute("DELETE FROM access_time WHERE mac_address=?", (mac,))  
         conn.commit()
         conn.close()
 
-threading.Thread(target=expiry_watcher, daemon=True).start()
+
 
 if __name__ == '__main__':
+    threading.Thread(target=expiry_watcher, daemon=True).start()
     app.run(host='0.0.0.0', port=5000)

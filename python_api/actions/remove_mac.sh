@@ -16,9 +16,16 @@ fi
 echo "Revoking MAC: $MAC"
 
 # 1️⃣ Remove forwarding rule
-iptables -D FORWARD -m mac --mac-source "$MAC" -j ACCEPT 2>/dev/null
+if iptables -C FORWARD -m mac --mac-source "$MAC" -j ACCEPT 2>/dev/null; then
+    iptables -D FORWARD -m mac --mac-source "$MAC" -j ACCEPT
+    echo "MAC $MAC removed from FORWARD chain."
+else 
+  echo "Error: MAC $MAC not found in FORWARD chain."
+fi
 
 # 2️⃣ Restore HTTP redirect for this MAC
-iptables -t nat -D PREROUTING -i wlan0 -p tcp --dport 80 ! -d 192.168.50.1 -m mac --mac-source "$MAC" -j RETURN 2>/dev/null
+if iptables -t nat -C PREROUTING -i wlan0 -p tcp --dport 80 ! -d 192.168.50.1 -m mac --mac-source "$MAC" -j RETURN 2>/dev/null; then
+iptables -t nat -D PREROUTING -i wlan0 -p tcp --dport 80 ! -d 192.168.50.1 -m mac --mac-source "$MAC" -j RETURN
+fi
 
 echo "MAC $MAC revoked. Internet access blocked and captive portal restored."

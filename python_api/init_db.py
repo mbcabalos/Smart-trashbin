@@ -17,6 +17,7 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS access_time (
             mac_address TEXT NOT NULL,
+            ip_address TEXT,
             expires DATETIME NOT NULL,
             PRIMARY KEY (mac_address)
         )

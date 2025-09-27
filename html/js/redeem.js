@@ -22,18 +22,25 @@ form.addEventListener("submit", async (e) => {
   result.textContent = "";
 
   try {
-    const response = await fetch("http://127.0.0.1:5000/api/redeem", {
+    const response = await fetch("/api/redeem", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ voucher: code }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to redeem voucher.");
+      throw new Error(data.error || "Failed to redeem voucher.");
     }
 
-    window.location.href = "success.html";
+    // --- Decide what to do based on backend message ---
+    if (data.message && data.message.includes("Enjoy your extra 5 minutes of internet service.")) {
+      result.textContent = data.message;   // just show message
+      input.value = "";                     // clear input
+    } else {
+      window.location.href = "success.html"; // first-time redemption
+    }
   } catch (error) {
     // --- Restore form on error ---
     spinner.hidden = true;
@@ -42,5 +49,11 @@ form.addEventListener("submit", async (e) => {
     input.disabled = false;
     button.disabled = false;
     result.textContent = error.message || "An error occurred.";
+  } finally {
+    spinner.hidden = true; // always hide spinner after request
+    input.hidden = false;
+    button.hidden = false;
+    input.disabled = false;
+    button.disabled = false;
   }
 });
