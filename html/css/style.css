@@ -146,6 +146,27 @@ header h1 {
   color: #2c7a7b;
 }
 
+
+/* Leaderboard link positioned at top-right above the card title */
+.leaderboard-link {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.5rem;
+  font-size: 0.9rem;
+  color: #3ac44c; /* same green as register link */
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.leaderboard-link:hover {
+  text-decoration: underline;
+}
+
+/* Make sure the card header is relative to allow absolute positioning */
+.card {
+  position: relative;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -156,3 +177,4 @@ header h1 {
     transform: translateY(0);
   }
 }
+

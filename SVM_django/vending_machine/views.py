@@ -49,6 +49,7 @@ def register(request):
         email = request.POST.get("email")
         password = request.POST.get("password")
         confirm = request.POST.get("confirmPassword")
+        print(username, email, password, confirm)
 
         if password != confirm:
             messages.error(request, "Passwords do not match.")

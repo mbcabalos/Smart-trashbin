@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Wi-Fi Bin Leaderboard</title>
+    <link rel="stylesheet" href="css/leaderboard.css">
+</head>
+<body>
+    <main class="card">
+        <header>
+            <h1>Smart Wi-Fi Bin Leaderboard</h1>
+            <p class="tagline">Top users by bottle inserted</p>
+        </header>
+        <section class="content">
+            <div id="leaderboardWrapper">
+                <table id="leaderboardTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Username</th>
+                            <th>Bottle Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody">
+                        <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="spinner" class="spinner" style="display: none;"></div>
+
+            <p class="link-text">
+                Go back to 
+                <a href="index.html" class="link-btn">Redeem Voucher</a>
+            </p>
+        </section>
+    </main>
+    <script src="js/leaderboard.js"></script>
+</body>
+</html>

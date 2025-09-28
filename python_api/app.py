@@ -1,16 +1,34 @@
 import os
 import threading, time, subprocess
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 import sqlite3
 from datetime import datetime, timedelta
+from pymongo import MongoClient
+import django
+from django.conf import settings
+from django.contrib.auth.hashers import make_password, check_password
 from gen_voucher import generate_and_store_voucher
 from init_db import init_db
-from pymongo import MongoClient
-from werkzeug.security import generate_password_hash
-from flask_cors import CORS
 
 
+# ----------------------------
+# Django setup
+# ----------------------------
+if not settings.configured:
+    settings.configure(
+        PASSWORD_HASHERS=[
+            'django.contrib.auth.hashers.PBKDF2PasswordHasher',  # default in Django
+        ],
+        SECRET_KEY='some-random-secret-key',  # Django requires a SECRET_KEY
+    )
+django.setup()
 
+# ----------------------------
+# Init Flask
+# ----------------------------
+app = Flask(__name__)
+CORS(app)
 
 # ----------------------------
 # Init SQLite
@@ -20,24 +38,17 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE = os.path.join(BASE_DIR, "sbvm_wifi.db")
 REMOVE_SCRIPT = os.path.join(BASE_DIR, "actions", "remove_mac.sh")
 ALLOW_SCRIPT = os.path.join(BASE_DIR, "actions", "allow_mac.sh")
-
 ACCESS_DURATION_MINUTES = 5
 API_KEY = "DJMSBVMPROJ2025"
-
 
 # ----------------------------
 # Init MongoDB
 # ----------------------------
-client = MongoClient("mongodb+srv://smart_bin_wifi:smart_bin_wifi@cluster0.9fjmqox.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")   # change if using Atlas
+client = MongoClient("mongodb+srv://smart_bin_wifi:smart_bin_wifi@cluster0.9fjmqox.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 mdb = client["smart_vending"]
-
 users_col = mdb["users"]
 vouchers_col = mdb["vouchers"]
 logs_col = mdb["activity_logs"]
-
-
-app = Flask(__name__)
-CORS(app)
 
 
 # ----------------------------
@@ -64,7 +75,7 @@ def register():
         return jsonify({"error": "Email already registered"}), 400
 
     # Save user (hash password for security)
-    hashed_pw = generate_password_hash(password)
+    hashed_pw = make_password(password)
     user_doc = {
         "username": username,
         "email": email,
@@ -76,11 +87,45 @@ def register():
 
     return jsonify({"message": "Account successfully created"}), 201
 
+# ----------------------------
+# API: Leaderboard
+# ----------------------------
+@app.route('/api/leaderboard', methods=['GET'])
+def leaderboard():
+    """
+    Returns a leaderboard of users based on how many times they've redeemed vouchers.
+    """
+    try:
+        # MongoDB aggregation: count how many times each email appears with "redeem" action
+        pipeline = [
+            {"$match": {"action": "redeem"}},
+            {"$group": {"_id": "$email", "redeem_count": {"$sum": 1}}},
+            {"$sort": {"redeem_count": -1}},  # descending
+            {"$limit": 10}  # top 10 users
+        ]
+        results = list(logs_col.aggregate(pipeline))
+
+        # Optional: include username from users_col
+        leaderboard = []
+        for r in results:
+            user = users_col.find_one({"email": r["_id"]})
+            leaderboard.append({
+                "username": user["username"] if user else r["_id"],
+                "email": r["_id"],
+                "redeem_count": r["redeem_count"]
+            })
+
+        return jsonify({"leaderboard": leaderboard}), 200
+
+    except Exception as e:
+        print(f"Error generating leaderboard: {e}")
+        return jsonify({"error": "Failed to generate leaderboard"}), 500
 
 # ----------------------------
 # Helper functions
 # ----------------------------
 def get_mac_from_ip(ip):
+    # Attempt to retrieve the MAC address of a given IP
     try:
         subprocess.run(['ping', '-c', '1', '-W', '1', ip],
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -94,7 +139,6 @@ def get_mac_from_ip(ip):
     except Exception as e:
         print(f"Error retrieving MAC for IP {ip}: {e}")
     return None
-
 
 # ----------------------------
 # API: Generate Voucher
@@ -110,7 +154,6 @@ def generate_voucher_endpoint():
         return jsonify({"voucher": code, "message": "Voucher generated successfully"}), 200
     else:
         return jsonify({"error": "Failed to generate a unique voucher"}), 500
-
 
 # ----------------------------
 # API: Redeem Voucher
@@ -204,7 +247,6 @@ def redeem():
 
     return jsonify({'message': message})
 
-
 # ----------------------------
 # Expiry Watcher (SQLite only)
 # ----------------------------
@@ -225,7 +267,9 @@ def expiry_watcher():
         conn.commit()
         conn.close()
 
-
+# ----------------------------
+# Main
+# ----------------------------
 if __name__ == '__main__':
     threading.Thread(target=expiry_watcher, daemon=True).start()
     app.run(host='0.0.0.0', port=5000)
