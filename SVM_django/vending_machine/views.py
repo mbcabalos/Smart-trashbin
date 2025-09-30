@@ -31,12 +31,13 @@ def admin_required_session(view_func):
 # Helper to get current user
 # ------------------------------
 def get_current_user(request):
-    username = request.session.get('username')
-    if not username:
+    user_id = request.session.get('user_id')
+    if not user_id:
         return None
     try:
-        return User.objects.get(username=username)
-    except User.DoesNotExist:
+        # Use _id to find the user
+        return User.objects.get(_id=ObjectId(user_id))
+    except (User.DoesNotExist, Exception):
         return None
 
 
@@ -94,8 +95,8 @@ def login_view(request):
 
             # Check hashed password
             if check_password(password, user.password):
-                # Set session
-                request.session['user_id'] = str(user.id)  # Convert ObjectId to string
+                # Set session - use _id instead of id
+                request.session['user_id'] = str(user._id)  # Convert ObjectId to string
                 request.session['username'] = user.username
                 request.session['role'] = user.role
 
@@ -168,7 +169,6 @@ def admin_dashboard(request):
     }
     return render(request, "admin/admin_dashboard.html", context)
 
-
 @admin_required_session
 def admin_users(request):
     users = User.objects.all().order_by('-created_at')
@@ -183,7 +183,13 @@ def admin_add_user(request):
         username = request.POST.get('username')
         email = request.POST.get('email')
         password = request.POST.get('password')
+        confirm_password = request.POST.get('confirmPassword')
         role = request.POST.get('role', 'user')
+
+        # Validate password confirmation
+        if password != confirm_password:
+            messages.error(request, 'Passwords do not match.')
+            return redirect('admin_users')
 
         if User.objects.filter(username=username).exists():
             messages.error(request, 'Username already exists.')
@@ -194,7 +200,8 @@ def admin_add_user(request):
                 username=username,
                 email=email,
                 password=make_password(password),
-                role=role
+                role=role,
+                created_at=timezone.now()
             )
             messages.success(request, f'User {username} created successfully.')
 
@@ -202,9 +209,14 @@ def admin_add_user(request):
 
 @admin_required_session
 def admin_edit_user(request, user_id):
-    user = User.objects.get(id=user_id)  # or User.objects(id=user_id).first() depending on your ODM
-    if not user:
+    try:
+        # Use _id field with ObjectId conversion
+        user = User.objects.get(_id=ObjectId(user_id))
+    except User.DoesNotExist:
         messages.error(request, "User not found.")
+        return redirect('admin_users')
+    except Exception as e:
+        messages.error(request, f"Error: {str(e)}")
         return redirect('admin_users')
 
     if request.method == 'POST':
@@ -213,43 +225,95 @@ def admin_edit_user(request, user_id):
         password = request.POST.get('password')
         role = request.POST.get('role', 'user')
 
-        if User.objects(username=new_username).filter(id__ne=user_id).first():
-            messages.error(request, 'Username already exists.')
-        elif User.objects(email=email).filter(id__ne=user_id).first():
+        # More strict validation
+        if new_username != user.username:
+            if User.objects.filter(username=new_username).exists():
+                messages.error(request, f'Username "{new_username}" already exists.')
+                return redirect('admin_users')
+        
+        # Use _id in exclude clause
+        if User.objects.filter(email=email).exclude(_id=ObjectId(user_id)).exists():
             messages.error(request, 'Email already exists.')
-        else:
-            user.username = new_username
-            user.email = email
-            user.role = role
-            if password:
-                user.password = make_password(password)  
-            user.save()
-            messages.success(request, f'User {new_username} updated successfully.')
+            return redirect('admin_users')
+
+        user.username = new_username
+        user.email = email
+        user.role = role
+        if password:
+            user.password = make_password(password)
+        user.save()
+        messages.success(request, f'User {new_username} updated successfully.')
 
     return redirect('admin_users')
 
 @admin_required_session
-def admin_delete_user(request, username):
+def admin_delete_user(request, user_id):
     current_user = get_current_user(request)
+    print("Current user:", current_user.username if current_user else "None")
+    print("User to delete ID:", user_id)
 
-    # Fetch the user by username
     try:
-        user = User.objects.get(username=username)
+        # Use _id field with ObjectId conversion
+        user = User.objects.get(_id=ObjectId(user_id))
     except User.DoesNotExist:
         messages.error(request, "User not found.")
         return redirect('admin_users')
+    except Exception as e:
+        print(f"Error: {e}")
+        messages.error(request, "Error finding user.")
+        return redirect('admin_users')
+
+    # Debug info
+    print("Found user:", user.username)
+    print("Found user _id:", user._id)
 
     # Prevent deleting yourself
-    if user.username == current_user.username:
+    if str(user._id) == str(current_user._id):
         messages.error(request, "You cannot delete your own account.")
         return redirect('admin_users')
 
-    # Delete the user
+    username = user.username
     user.delete()
     messages.success(request, f"User {username} deleted successfully.")
     return redirect('admin_users')
 
+@admin_required_session
+def admin_edit_user(request, user_id):
+    try:
+        # Use _id field with ObjectId conversion
+        user = User.objects.get(_id=ObjectId(user_id))
+    except User.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect('admin_users')
+    except Exception as e:
+        messages.error(request, f"Error: {str(e)}")
+        return redirect('admin_users')
 
+    if request.method == 'POST':
+        new_username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        role = request.POST.get('role', 'user')
+
+        # More strict validation
+        if new_username != user.username:
+            if User.objects.filter(username=new_username).exists():
+                messages.error(request, f'Username "{new_username}" already exists.')
+                return redirect('admin_users')
+        
+        if User.objects.filter(email=email).exclude(_id=ObjectId(user_id)).exists():
+            messages.error(request, 'Email already exists.')
+            return redirect('admin_users')
+
+        user.username = new_username
+        user.email = email
+        user.role = role
+        if password:
+            user.password = make_password(password)
+        user.save()
+        messages.success(request, f'User {new_username} updated successfully.')
+
+    return redirect('admin_users')
 
 
 @admin_required_session

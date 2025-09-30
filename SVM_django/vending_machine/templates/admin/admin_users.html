@@ -9,6 +9,18 @@
     <button class="btn btn-primary" onclick="openModal('addUserModal')">Add New User</button>
 </div>
 
+<!-- Add messages display with auto-hide at top right -->
+{% if messages %}
+<div class="message-container-top-right" id="messageContainer">
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-auto-hide">
+        <span class="alert-message">{{ message }}</span>
+        <span class="alert-close" onclick="this.parentElement.style.display='none'">×</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <div class="users-table">
     <div class="table-header">
         <h2>All Users</h2>
@@ -29,18 +41,18 @@
             <tbody>
                 {% for user in users %}
                 <tr>
-                    <td>{{ user.id }}</td>
+                    <td>{{ user.user_id }}</td>
                     <td>{{ user.username }}</td>
                     <td>{{ user.email }}</td>
                     <td>{% if user.role == "admin"%}Yes{% else %}No{% endif %}</td>
                     <td>{{ user.created_at|date:"M d, Y" }}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn btn-success btn-sm" onclick="openModal('editUserModal{{ user.id }}')">Edit</button>
-                            <a href="{% url 'admin_delete_user' user.username %}" 
+                            <!-- Add Edit button back using the unique ObjectId -->
+                            <button class="btn btn-success btn-sm" onclick="openModal('editUserModal{{ user.user_id }}')">Edit</button>
+                            <a href="{% url 'admin_delete_user' user.user_id %}" 
                                 class="btn btn-danger btn-sm" 
-                                onclick="return confirm('Are you sure you want to delete this user?')">Delete</a>
-
+                                onclick="return confirm('Are you sure you want to delete {{ user.username }}?')">Delete</a>
                         </div>
                     </td>
                 </tr>
@@ -53,13 +65,12 @@
     </div>
 </div>
 
-<!-- Add/Edit User Modals remain the same -->
 <!-- Add User Modal -->
 <div id="addUserModal" class="modal" style="display:none;">
     <div class="modal-content">
         <span class="close" onclick="closeModal('addUserModal')">&times;</span>
         <h2>Add New User</h2>
-        <form method="POST" action="{% url 'admin_edit_user' user.id %}">
+        <form method="POST" action="{% url 'admin_add_user' %}">
             {% csrf_token %}
             <div class="form-group">
                 <label for="username">Username</label>
@@ -92,33 +103,32 @@
     </div>
 </div>
 
-<!-- Edit User Modals (one per user) -->
+<!-- Edit User Modals using unique ObjectIds -->
 {% for user in users %}
-<!-- Edit User Modal -->
-<div id="editUserModal{{ user.id }}" class="modal" style="display:none;">
+<div id="editUserModal{{ user.user_id }}" class="modal" style="display:none;">
     <div class="modal-content">
-        <span class="close" onclick="closeModal('editUserModal{{ user.id }}')">&times;</span>
-        <h2>Edit User</h2>
-        <form method="POST" action="{% url 'admin_edit_user' user.username %}">
+        <span class="close" onclick="closeModal('editUserModal{{ user.user_id }}')">&times;</span>
+        <h2>Edit User: {{ user.username }}</h2>
+        <form method="POST" action="{% url 'admin_edit_user' user.user_id %}">
             {% csrf_token %}
             <div class="form-group">
-                <label for="username{{ user.id }}">Username</label>
-                <input type="text" name="username" id="username{{ user.id }}" required class="form-control" value="{{ user.username }}">
+                <label for="username{{ user.user_id }}">Username</label>
+                <input type="text" name="username" id="username{{ user.user_id }}" required class="form-control" value="{{ user.username }}">
             </div>
             
             <div class="form-group">
-                <label for="email{{ user.id }}">Email</label>
-                <input type="email" name="email" id="email{{ user.id }}" required class="form-control" value="{{ user.email }}">
+                <label for="email{{ user.user_id }}">Email</label>
+                <input type="email" name="email" id="email{{ user.user_id }}" required class="form-control" value="{{ user.email }}">
             </div>
             
             <div class="form-group">
-                <label for="password{{ user.id }}">Password</label>
-                <input type="password" name="password" id="password{{ user.id }}" class="form-control" placeholder="Leave blank to keep current password">
+                <label for="password{{ user.user_id }}">Password</label>
+                <input type="password" name="password" id="password{{ user.user_id }}" class="form-control" placeholder="Leave blank to keep current password">
             </div>
             
             <div class="form-group">
-                <label for="role{{ user.id }}">Role</label>
-                <select name="role" id="role{{ user.id }}" class="form-control">
+                <label for="role{{ user.user_id }}">Role</label>
+                <select name="role" id="role{{ user.user_id }}" class="form-control">
                     <option value="user" {% if user.role == "user" %}selected{% endif %}>User</option>
                     <option value="admin" {% if user.role == "admin" %}selected{% endif %}>Admin</option>
                 </select>
@@ -126,7 +136,7 @@
             
             <div style="margin-top: 15px;">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('editUserModal{{ user.id }}')">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editUserModal{{ user.user_id }}')">Cancel</button>
             </div>
         </form>
     </div>
@@ -152,8 +162,8 @@
     background-color: #fff;
     padding: 25px;
     border-radius: 8px;
-    width: 500px;           /* increased width */
-    max-width: 80%;         /* responsive on smaller screens */
+    width: 500px;
+    max-width: 80%;
     position: relative;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
@@ -170,17 +180,95 @@
     margin-bottom: 15px; 
     margin-right: 20px;
 }
+
+/* Toast-style alerts at top right */
+.message-container-top-right {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    max-width: 350px;
+}
+
+.alert {
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease-in-out;
+    transform: translateX(0);
+}
+
+.alert-message {
+    flex: 1;
+    margin-right: 10px;
+}
+
+.alert-close {
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.alert-close:hover {
+    opacity: 1;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-auto-hide {
+    animation: slideInRight 0.3s ease-out, fadeOut 0.5s ease-in-out 2s forwards;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+        display: none;
+    }
+}
 </style>
 
-
-<!-- Modal JS -->
 <script>
 function openModal(modalId) {
     document.getElementById(modalId).style.display = 'block';
 }
+
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
+
 window.onclick = function(event) {
     var modals = document.getElementsByClassName('modal');
     for (var i=0; i<modals.length; i++) {
@@ -189,6 +277,35 @@ window.onclick = function(event) {
         }
     }
 }
+
+// Auto-hide messages after 3 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        var messageContainer = document.getElementById('messageContainer');
+        if (messageContainer) {
+            var alerts = messageContainer.getElementsByClassName('alert');
+            for (var i = 0; i < alerts.length; i++) {
+                alerts[i].style.animation = 'fadeOut 0.5s ease-in-out forwards';
+            }
+            // Remove the container after fade out
+            setTimeout(function() {
+                if (messageContainer) {
+                    messageContainer.style.display = 'none';
+                }
+            }, 600);
+        }
+    }, 3000);
+});
+
+// Manual close functionality
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('alert-close')) {
+        e.target.parentElement.style.animation = 'fadeOut 0.3s ease-in-out forwards';
+        setTimeout(function() {
+            e.target.parentElement.style.display = 'none';
+        }, 300);
+    }
+});
 </script>
 
 {% endblock content %}
