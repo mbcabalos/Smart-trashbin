@@ -10,7 +10,7 @@ urlpatterns = [
     path('admin-vouchers/', views.admin_vouchers, name='admin_vouchers'),
     path('admin-users/add/', views.admin_add_user, name='admin_add_user'),
     path('admin-users/edit/<str:user_id>/', views.admin_edit_user, name='admin_edit_user'),
-    path('admin-users/delete/<str:username>/', views.admin_delete_user, name='admin_delete_user'),
+    path('admin-users/delete/<str:user_id>/', views.admin_delete_user, name='admin_delete_user'),
     path('admin-vouchers/add/', views.admin_add_voucher, name='admin_add_voucher'),
     path('admin-vouchers/delete/<str:voucher_id>/', views.admin_delete_voucher, name='admin_delete_voucher'),
 

@@ -49,6 +49,11 @@ mdb = client["smart_vending"]
 users_col = mdb["users"]
 vouchers_col = mdb["vouchers"]
 logs_col = mdb["activity_logs"]
+try:
+    client.admin.command("ping")
+    print("MongoDB connection successful")
+except Exception as e:
+    print(f"MongoDB connection failed: {e}")
 
 
 # ----------------------------
