@@ -11,7 +11,12 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "fallback-secret-key")
 DEBUG = False
 
 # Allowed hosts (your Render app URL)
-ALLOWED_HOSTS = ['smart_bin_web.onrender.com']
+ALLOWED_HOSTS = [
+    'smart-bin-web.onrender.com',
+    'localhost',
+    '127.0.0.1',
+    '.onrender.com'  # This allows any subdomain of onrender.com
+]
 
 # Installed apps
 INSTALLED_APPS = [
