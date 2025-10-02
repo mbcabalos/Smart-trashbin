@@ -134,26 +134,21 @@ def logout_view(request):
 @login_required_session
 def dashboard(request):
     user = get_current_user(request)
-    
-    # FIX: Use redeemed_by_email instead of redeemed_by
-    vouchers = Voucher.objects.filter(redeemed_by_email=user.email).order_by('-created_at')
-    transactions = ActivityLog.objects.filter(email=user.email).order_by('-timestamp')
 
-    # Count vouchers based on ActivityLog for this user
-    redeemed_vouchers_count = ActivityLog.objects.filter(email=user.email).count()
-    total_duration_minutes = redeemed_vouchers_count * 5
+    # Fetch all vouchers for this user
+    transactions = Voucher.objects.filter(redeemed_by_email=user.email).order_by('-redeemed_at')
+
+    # Calculate totals
+    total_duration_minutes = sum(v.voucher_duration or 0 for v in transactions)
+    redeemed_vouchers = transactions.count()
 
     context = {
-        'user': user,
-        'vouchers': vouchers,
-        'transactions': transactions,
-        'redeemed_vouchers': redeemed_vouchers_count,
-        'total_duration_minutes': total_duration_minutes
+        "user": user,
+        "transactions": transactions,
+        "total_duration_minutes": total_duration_minutes,
+        "redeemed_vouchers": redeemed_vouchers,
     }
-    
-    return render(request, 'users/dashboard.html', context)
-
-
+    return render(request, "users/dashboard.html", context)
 
 # ------------------------------
 # Admin Views

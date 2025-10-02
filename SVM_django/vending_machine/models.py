@@ -31,6 +31,7 @@ class User(models.Model):
 class Voucher(models.Model):
     _id = models.ObjectIdField(primary_key=True, default=ObjectId, editable=False)
     voucher_code = models.CharField(max_length=50, unique=True)  
+    voucher_duration = models.IntegerField(null=True, blank=True)
     redeemed = models.BooleanField(default=False)    
     redeemed_by_email = models.EmailField(null=True, blank=True)  
     created_at = models.DateTimeField(auto_now_add=True)  
@@ -61,4 +62,4 @@ class ActivityLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "activity_logs"
+        db_table = "activity_logs"  

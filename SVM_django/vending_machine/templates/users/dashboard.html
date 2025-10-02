@@ -62,11 +62,15 @@
                         <tbody>
                             {% for transaction in transactions %}
                             <tr>
-                                <td>{{ transaction.timestamp|date:"M d, Y H:i" }}</td>
+                                <td>{{ transaction.created_at|date:"M d, Y H:i" }}</td>
                                 <td>{{ transaction.voucher_code }}</td>
-                                <td>5 minutes</td>
+                                <td>{{ transaction.voucher_duration }} minutes</td>
                                 <td>
-                                    <span class="badge" style="background:#3ac44c;">Redeemed</span>
+                                    {% if transaction.redeemed %}
+                                        <span class="badge" style="background:#3ac44c;">Redeemed</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Unused</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
