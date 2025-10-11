@@ -140,11 +140,15 @@ def dashboard(request):
 
     # Calculate totals
     total_duration_minutes = sum(v.voucher_duration or 0 for v in transactions)
+    bottle_count = total_duration_minutes // 5 
     redeemed_vouchers = transactions.count()
+    for transaction in transactions:
+        transaction.bottle = transaction.voucher_duration / 5
 
     context = {
         "user": user,
         "transactions": transactions,
+        "bottle_count": bottle_count,
         "total_duration_minutes": total_duration_minutes,
         "redeemed_vouchers": redeemed_vouchers,
     }
