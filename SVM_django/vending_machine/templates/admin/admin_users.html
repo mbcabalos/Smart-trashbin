@@ -420,11 +420,9 @@ function closeModal(modalId) {
     if (!overlay) return;
     overlay.style.display = 'none';
     overlay.setAttribute('aria-hidden', 'true');
-    // restore background scroll
     document.documentElement.style.overflow = '';
 }
 
-// click outside to close (overlay background)
 window.addEventListener('click', function(e) {
     const overlays = document.querySelectorAll('.modal-overlay');
     overlays.forEach(ov => {
@@ -435,7 +433,6 @@ window.addEventListener('click', function(e) {
     });
 });
 
-// escape key closes
 window.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         document.querySelectorAll('.modal-overlay').forEach(ov => ov.style.display = 'none');
