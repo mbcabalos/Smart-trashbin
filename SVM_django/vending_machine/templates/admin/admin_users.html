@@ -135,7 +135,7 @@
 </div>
 
 <!-- Add User Modal -->
-<div id="addUserModal" class="modal" style="display:none;">
+<div id="addUserModal" class="modal" >
     <div class="modal-content">
         <span class="close" onclick="closeModal('addUserModal')">&times;</span>
         <h2>Add New User</h2>
@@ -174,7 +174,7 @@
 
 <!-- Edit User Modals using unique ObjectIds -->
 {% for user in users %}
-<div id="editUserModal{{ user.user_id }}" class="modal" style="display:none;">
+<div id="editUserModal{{ user.user_id }}" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeModal('editUserModal{{ user.user_id }}')">&times;</span>
         <h2>Edit User: {{ user.username }}</h2>
