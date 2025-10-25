@@ -250,39 +250,6 @@ tr:hover {
   box-shadow: 0 0 0 2px rgba(58, 196, 76, 0.2);
 }
 
-/* --- Modals --- */
-.modal {
-    position: fixed;
-    z-index: 999;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;   
-    justify-content: center; 
-}
-
-.modal-content {
-    background-color: #fff;
-    padding: 25px;
-    border-radius: 8px;
-    width: 500px;
-    max-width: 80%;
-    position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-.close {
-    position: absolute;
-    right: 15px;
-    top: 10px;
-    font-size: 24px;
-    cursor: pointer;
-}
-
 form .form-group {
     display: flex;
     flex-direction: column;
