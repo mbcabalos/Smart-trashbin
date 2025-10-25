@@ -135,74 +135,79 @@
 </div>
 
 <!-- Add User Modal -->
-<div id="addUserModal" class="modal" >
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('addUserModal')">&times;</span>
-        <h2>Add New User</h2>
-        <form method="POST" action="{% url 'admin_add_user' %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" name="username" id="username" required class="form-control">
-            </div>
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" name="email" id="email" required class="form-control">
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" name="password" id="password" required class="form-control">
-            </div>
-            <div class="form-group">
-                <label for="confirmPassword">Confirm Password</label>
-                <input type="password" name="confirmPassword" id="confirmPassword" required class="form-control">
-            </div>
-            <div class="form-group">
-                <label for="role">Role</label>
-                <select name="role" id="role" class="form-control">
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                </select>
-            </div>
-            <div style="margin-top: 15px;">
-                <button type="submit" class="btn btn-primary">Add User</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('addUserModal')">Cancel</button>
-            </div>
-        </form>
+<div id="addUserModal" class="modal-overlay" style="display:none;">
+    <div class="modal-fixed-wrap" aria-hidden="true">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addUserModal')">&times;</span>
+            <h2>Add New User</h2>
+            <form method="POST" action="{% url 'admin_add_user' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" name="username" id="username" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" name="email" id="email" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" name="password" id="password" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" name="confirmPassword" id="confirmPassword" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="role">Role</label>
+                    <select name="role" id="role" class="form-control">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button type="submit" class="btn btn-primary">Add User</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addUserModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
+
 <!-- Edit User Modals using unique ObjectIds -->
 {% for user in users %}
-<div id="editUserModal{{ user.user_id }}" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('editUserModal{{ user.user_id }}')">&times;</span>
-        <h2>Edit User: {{ user.username }}</h2>
-        <form method="POST" action="{% url 'admin_edit_user' user.user_id %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="username{{ user.user_id }}">Username</label>
-                <input type="text" name="username" id="username{{ user.user_id }}" required class="form-control" value="{{ user.username }}">
-            </div>
-            
-            <div class="form-group">
-                <label for="email{{ user.user_id }}">Email</label>
-                <input type="email" name="email" id="email{{ user.user_id }}" required class="form-control" value="{{ user.email }}">
-            </div>
-            
-            <div class="form-group">
-                <label for="role{{ user.user_id }}">Role</label>
-                <select name="role" id="role{{ user.user_id }}" class="form-control">
-                    <option value="user" {% if user.role == "user" %}selected{% endif %}>User</option>
-                    <option value="admin" {% if user.role == "admin" %}selected{% endif %}>Admin</option>
-                </select>
-            </div>
-            
-            <div style="margin-top: 15px;">
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('editUserModal{{ user.user_id }}')">Cancel</button>
-            </div>
-        </form>
+<div id="editUserModal{{ user.user_id }}" class="modal-overlay" style="display:none;">
+    <div class="modal-fixed-wrap" aria-hidden="true">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editUserModal{{ user.user_id }}')">&times;</span>
+            <h2>Edit User: {{ user.username }}</h2>
+            <form method="POST" action="{% url 'admin_edit_user' user.user_id %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="username{{ user.user_id }}">Username</label>
+                    <input type="text" name="username" id="username{{ user.user_id }}" required class="form-control" value="{{ user.username }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email{{ user.user_id }}">Email</label>
+                    <input type="email" name="email" id="email{{ user.user_id }}" required class="form-control" value="{{ user.email }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="role{{ user.user_id }}">Role</label>
+                    <select name="role" id="role{{ user.user_id }}" class="form-control">
+                        <option value="user" {% if user.role == "user" %}selected{% endif %}>User</option>
+                        <option value="admin" {% if user.role == "admin" %}selected{% endif %}>Admin</option>
+                    </select>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editUserModal{{ user.user_id }}')">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endfor %}
@@ -212,49 +217,44 @@
     margin-bottom: 15px; 
     margin-right: 20px;
 }
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.45);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    overflow-y: auto;
-    transition: opacity 0.2s ease;
+/* overlay covers viewport */
+.modal-overlay {
+  position: fixed !important;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.45);
+  z-index: 9999;
+  overflow-y: auto;
+  display: none;
 }
 
-.modal.show {
-    display: flex !important;
+/* fixed wrapper that actually does the centering */
+.modal-fixed-wrap {
+    position: fixed;               /* crucial: fixed to viewport */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;                /* above overlay if needed */
+    width: 100%;
+    max-width: 520px;              /* control modal max width */
+    padding: 0 12px;               /* small horizontal gap on mobile */
+    box-sizing: border-box;
 }
 
+/* your modal box */
 .modal-content {
     background: #fff;
-    border-radius: 10px;
-    padding: 25px;
-    width: 95%;
-    max-width: 480px;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
-    animation: fadeInScale 0.2s ease;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.24);
+    width: 100%;
+    box-sizing: border-box;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
-@keyframes fadeInScale {
-    from {
-        opacity: 0;
-        transform: scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-
-/* Close button */
-.close {
+/* close button styling */
+.modal-content .close {
     position: absolute;
     right: 15px;
     top: 10px;
@@ -264,7 +264,7 @@
     cursor: pointer;
 }
 
-.close:hover {
+.modal-content .close:hover {
     color: #000;
 }
 
@@ -405,51 +405,42 @@
 </style>
 
 <script>
-function openModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.add('show');
+function openModal(modalId) {
+    const overlay = document.getElementById(modalId);
+    if (!overlay) return;
+    // show overlay
+    overlay.style.display = 'block';
+    overlay.setAttribute('aria-hidden', 'false');
+    // lock background scroll
+    document.documentElement.style.overflow = 'hidden';
 }
 
-function closeModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.remove('show');
+function closeModal(modalId) {
+    const overlay = document.getElementById(modalId);
+    if (!overlay) return;
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden', 'true');
+    // restore background scroll
+    document.documentElement.style.overflow = '';
 }
 
-window.onclick = function (event) {
-    document.querySelectorAll('.modal').forEach(modal => {
-        if (event.target === modal) closeModal(modal.id);
-    });
-};
-
-
-// Auto-hide messages after 3 seconds
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        var messageContainer = document.getElementById('messageContainer');
-        if (messageContainer) {
-            var alerts = messageContainer.getElementsByClassName('alert');
-            for (var i = 0; i < alerts.length; i++) {
-                alerts[i].style.animation = 'fadeOut 0.5s ease-in-out forwards';
-            }
-            // Remove the container after fade out
-            setTimeout(function() {
-                if (messageContainer) {
-                    messageContainer.style.display = 'none';
-                }
-            }, 600);
+// click outside to close (overlay background)
+window.addEventListener('click', function(e) {
+    const overlays = document.querySelectorAll('.modal-overlay');
+    overlays.forEach(ov => {
+        if (e.target === ov) {
+        ov.style.display = 'none';
+        document.documentElement.style.overflow = '';
         }
-    }, 3000);
+    });
 });
 
-// Manual close functionality
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('alert-close')) {
-        e.target.parentElement.style.animation = 'fadeOut 0.3s ease-in-out forwards';
-        setTimeout(function() {
-            e.target.parentElement.style.display = 'none';
-        }, 300);
+// escape key closes
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay').forEach(ov => ov.style.display = 'none');
+        document.documentElement.style.overflow = '';
     }
-});
+    });
 </script>
-
 {% endblock content %}
